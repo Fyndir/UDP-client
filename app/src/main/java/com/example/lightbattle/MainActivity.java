@@ -32,27 +32,22 @@ public class MainActivity extends AppCompatActivity
     }
 
     /// Initialise une socket avec les parametres recupere dans l'interface graphique pour l'envoi des données
-    public void Initreseau()
+    public void Initreseau(InetAddress address)
     {
         try
         {
-            UDPSocket = new DatagramSocket();
-            address = InetAddress.getByName(((TextView)findViewById(R.id.EdIpServeur)).getText().toString());
+            this.UDPSocket = new DatagramSocket();
+            this.address = address;
         }
         catch (SocketException e)
         {
                 e.printStackTrace();
         }
-        catch (UnknownHostException e)
-        {
-            e.printStackTrace();
-        }
     }
     /// Envoi les données dans la socket defini par la methode InitReseau
     public void SendInstruction(final byte[] data )
     {
-        Initreseau();
-        (new Thread()
+        new Thread()
         {
             @Override
             public void run()
@@ -70,31 +65,38 @@ public class MainActivity extends AppCompatActivity
                 }
 
             }
-        }).start();
+        }.start();
     }
 
     /// Envoi X fois la data
-    public void SendData(int x)
+    public void SendData(final int x)
     {
-        try
+        new Thread()
         {
-         for (int i = 0; i < x; i++)
+            @Override
+            public void run()
             {
-              byte[] data = ((TextView) findViewById(R.id.EdText)).getText().toString().getBytes();
-              SendInstruction(data);
+                try
+                {
+                    Initreseau(InetAddress.getByName(((TextView)findViewById(R.id.EdIpServeur)).getText().toString()));
+                    for (int i = 0; i < x; i++)
+                    {
+                        byte[] data = ((TextView) findViewById(R.id.EdText)).getText().toString().getBytes();
+                        SendInstruction(data);
+                    }
+                } catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
-         }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        }.start();
 
     }
 
     /// scan le port mis en parametre
     public void ReceiveData(final int portNum)
     {
-        (new Thread()
+        new Thread()
         {
             @Override
             public void run()
@@ -111,7 +113,6 @@ public class MainActivity extends AppCompatActivity
                         socketReceive.receive(data);
                         System.out.println(data);
                     }
-
                 }
                 catch (Exception e)
                 {
@@ -119,6 +120,6 @@ public class MainActivity extends AppCompatActivity
                 }
 
             }
-        }).start();
+        }.start();
     }
 }
