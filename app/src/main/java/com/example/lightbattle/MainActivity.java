@@ -9,24 +9,29 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+{
 
     private DatagramSocket UDPSocket;
     private InetAddress address;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findViewById(R.id.btSendMessage).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btSendMessage).setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                SendData();
+            public void onClick(View v)
+            {
+                SendData(Integer.parseInt(((TextView) findViewById(R.id.EdNbRepete)).getText().toString()));
             }
         });
     }
 
+    /// Initialise une socket avec les parametres recupere dans l'interface graphique pour l'envoi des données
     public void Initreseau()
     {
         try
@@ -43,8 +48,8 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
-    public void SendInstructionToLed(final byte[] data )
+    /// Envoi les données dans la socket defini par la methode InitReseau
+    public void SendInstruction(final byte[] data )
     {
         Initreseau();
         (new Thread()
@@ -56,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
                 {
                     DatagramPacket packet = new DatagramPacket(data, data.length, address, Integer.valueOf(((TextView) findViewById(R.id.EdPort)).getText().toString()));
                     UDPSocket.send(packet);
+                    DatagramPacket packetreponse = null;
+                    UDPSocket.receive(packetreponse);
                 }
                 catch (Exception e)
                 {
@@ -66,14 +73,15 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-
-    public void SendData() {
+    /// Envoi X fois la data
+    public void SendData(int x)
+    {
         try
         {
-         for (int i = 0; i < Integer.parseInt(((TextView) findViewById(R.id.EdNbRepete)).getText().toString()); i++)
+         for (int i = 0; i < x; i++)
             {
               byte[] data = ((TextView) findViewById(R.id.EdText)).getText().toString().getBytes();
-              SendInstructionToLed(data);
+              SendInstruction(data);
             }
          }
         catch (Exception e)
@@ -83,28 +91,34 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void SendDatardm() {
-        try
-        {
-            for (int i = 0; i < Integer.parseInt(((TextView) findViewById(R.id.EdNbRepete)).getText().toString()); i++)
-            {
-                int rnd = myRandomInteger(1,2);
-                String datastr = String.valueOf(rnd);
-                datastr="("+datastr+")";
-                byte[] data =   datastr.getBytes();
-                SendInstructionToLed(data);
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-
-    }
-
-   public int myRandomInteger(int min, int max)
+    /// scan le port mis en parametre
+    public void ReceiveData(final int portNum)
     {
-        return (int) (min + Math.random() * (max - min + 1));
-    }
+        (new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
 
+                    final int taille = 1024;
+                    final byte buffer[] = new byte[taille];
+                    DatagramSocket socketReceive = new DatagramSocket(portNum);
+                    while(true)
+                    {
+                        DatagramPacket data = new DatagramPacket(buffer,buffer.length);
+                        socketReceive.receive(data);
+                        System.out.println(data);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+
+            }
+        }).start();
+    }
 }
