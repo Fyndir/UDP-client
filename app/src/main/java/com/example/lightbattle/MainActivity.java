@@ -1,66 +1,63 @@
 package com.example.lightbattle;
-import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
-public class MainActivity extends AppCompatActivity
-{
-
-    private DatagramSocket UDPSocket;
-    private InetAddress address;
+public class MainActivity extends AppCompatActivity {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findViewById(R.id.btSendMessage).setOnClickListener(new View.OnClickListener()
-        {
+        findViewById(R.id.btSendMessage).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
-                SendData(Integer.parseInt(((TextView) findViewById(R.id.EdNbRepete)).getText().toString()));
+            public void onClick(View v) {
+                int nbrepet = Integer.parseInt(((TextView) findViewById(R.id.EdNbRepete)).getText().toString());
+                String data = ((TextView) findViewById(R.id.EdText)).getText().toString();
+                int port = Integer.valueOf(((TextView) findViewById(R.id.EdPort)).getText().toString());
+                String address = ((TextView) findViewById(R.id.EdIpServeur)).getText().toString();
+                SendData(nbrepet,data,port,address);
             }
         });
     }
 
+
+
+    private DatagramSocket UDPSocket;
+    private InetAddress address;
+    private int port;
+
     /// Initialise une socket avec les parametres recupere dans l'interface graphique pour l'envoi des données
-    public void Initreseau(InetAddress address)
-    {
-        try
-        {
+    public void Initreseau(InetAddress address) {
+        try {
             this.UDPSocket = new DatagramSocket();
             this.address = address;
-        }
-        catch (SocketException e)
-        {
-                e.printStackTrace();
+        } catch (SocketException e) {
+            e.printStackTrace();
         }
     }
+
     /// Envoi les données dans la socket defini par la methode InitReseau
-    public void SendInstruction(final byte[] data )
-    {
-        new Thread()
-        {
+    public void SendInstruction(final byte[] data, final int port) {
+        new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
-                    DatagramPacket packet = new DatagramPacket(data, data.length, address, Integer.valueOf(((TextView) findViewById(R.id.EdPort)).getText().toString()));
+            public void run() {
+                try {
+                    DatagramPacket packet = new DatagramPacket(data, data.length, address, port);
                     UDPSocket.send(packet);
                     DatagramPacket packetreponse = null;
                     UDPSocket.receive(packetreponse);
-                }
-                catch (Exception e)
-                {
+                    DisplayData(packetreponse);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
@@ -69,23 +66,17 @@ public class MainActivity extends AppCompatActivity
     }
 
     /// Envoi X fois la data
-    public void SendData(final int x)
-    {
-        new Thread()
-        {
+    public void SendData(final int nbRepet, final String Sdata , final int port, final String address) {
+        new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
-                    Initreseau(InetAddress.getByName(((TextView)findViewById(R.id.EdIpServeur)).getText().toString()));
-                    for (int i = 0; i < x; i++)
-                    {
-                        byte[] data = ((TextView) findViewById(R.id.EdText)).getText().toString().getBytes();
-                        SendInstruction(data);
+            public void run() {
+                try {
+                    Initreseau(InetAddress.getByName(address));
+                    for (int i = 0; i < nbRepet; i++) {
+                        byte[] data = Sdata.getBytes();
+                        SendInstruction(data,port);
                     }
-                } catch (Exception e)
-                {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -94,32 +85,31 @@ public class MainActivity extends AppCompatActivity
     }
 
     /// scan le port mis en parametre
-    public void ReceiveData(final int portNum)
-    {
-        new Thread()
-        {
+    public void ReceiveData(final int portNum) {
+        new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
 
                     final int taille = 1024;
-                    final byte buffer[] = new byte[taille];
+                    final byte[] buffer = new byte[taille];
                     DatagramSocket socketReceive = new DatagramSocket(portNum);
-                    while(true)
-                    {
-                        DatagramPacket data = new DatagramPacket(buffer,buffer.length);
+                    while (true) {
+                        DatagramPacket data = new DatagramPacket(buffer, buffer.length);
                         socketReceive.receive(data);
-                        System.out.println(data);
+                        DisplayData(data);
                     }
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
             }
         }.start();
     }
+
+    // Modifie l affichage en fonction de la tram recu
+    public void DisplayData(DatagramPacket data) {
+        System.out.println(data);
+    }
+
 }
